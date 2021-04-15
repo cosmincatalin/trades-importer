@@ -5,3 +5,7 @@ requirements.lock
 requirements.out
 .idea
 *.pyc
+build
+dist
+src
+*egg-info*
