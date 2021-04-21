@@ -31,14 +31,14 @@ class SimplyWallSt:
             "provider": "sws",
             "cross_client": "false"
         }
-        r = requests.post(url, form_data)
+        response = requests.post(url, form_data)
 
-        if r.status_code == 200:
+        if response.status_code == 200:
             logger.info("Got access keys.")
         else:
-            logger.warning(f"Something went wrong when getting the access keys: {r.text}")
+            logger.warning(f"Something went wrong when getting the access keys: {response.text}")
 
-        self._bearer_token = r.json()["access_token"]
+        self._bearer_token = response.json()["access_token"]
 
     def get_portfolio_ticker_id(self, exchange: str, ticker: str) -> Optional[int]:
         if self._bearer_token is None:
@@ -51,6 +51,10 @@ class SimplyWallSt:
         }
 
         response = requests.request("GET", url, headers=headers)
+
+        if response.status_code != 200:
+            logger.error(f"Something went wrong when trying to get the portfolio ticker id for {exchange}:{ticker}. Code {response.status_code}")
+            return None
 
         portfolios = [portfolio for portfolio in response.json()["data"] if portfolio["id"] == int(self.portfolio_id)]
 
@@ -82,10 +86,10 @@ class SimplyWallSt:
             "portfolio_id": self.portfolio_id,
             "unique_symbol": f"{exchange}:{ticker.upper()}"
         })
-        r = requests.post(url, headers=headers, data=payload)
+        response = requests.post(url, headers=headers, data=payload)
 
-        if not r.status_code == 200:
-            logger.warning(f"Could not create a portfolio ticker id for {exchange}:{ticker} because {r.text}.")
+        if not response.status_code == 200:
+            logger.warning(f"Could not create a portfolio ticker id for {exchange}:{ticker} because {response.text}.")
 
     def get_existing_transactions(self) -> Optional[List[Dict]]:
         if self._bearer_token is None:
@@ -151,14 +155,18 @@ class SimplyWallSt:
             "Authorization": f"Bearer {self._bearer_token}"
         }
 
-        r = requests.post(url, form_data, headers=headers)
-        if not r.status_code == 200:
-            logger.warning(f"Could not add transaction for {form_data} because {r.text}.")
+        response = requests.post(url, form_data, headers=headers)
+        if not response.status_code == 200:
+            logger.warning(f"Could not add transaction for {form_data} because {response.text}.")
 
     @staticmethod
     def get_exchange_ticker(exchange: str, ticker: str) -> Optional[str]:
         url = f"https://legacy.simplywall.st/api/search/{exchange}:{ticker.upper()}"
         response = requests.request("GET", url)
+
+        if response.status_code != 200:
+            logger.error(f"Something went wrong when trying to get the exchange on maybe {exchange} for ticker {ticker}. Code {response.status_code}")
+            return None
 
         tentatives = [tentative["value"] for tentative in response.json() if tentative["value"].replace(".", "") == f"{exchange}:{ticker.upper()}"]
 

@@ -12,5 +12,5 @@ setup(
     packages=[
         "trades_importer"
     ],
-    install_requires=["requests==2.25.1"]
+    install_requires=["requests>=2", "beautifulsoup4>=4"]
 )
